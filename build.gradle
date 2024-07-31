@@ -13,46 +13,21 @@ ext {
 
 repositories {
     mavenCentral()
-//    maven {
-//        allowInsecureProtocol true
-//        credentials {
-//            username ""
-//            password ""
-//        }
-//        url  'http://xxxx:xxxx/repository/techsupport-public'
-//        artifactUrls  'http://xx.xx.xx.xx:8081/repository/techsupport-snapshot'
-//    }
 }
-/*-----------------------------------------------------------------------------------------------------------
-	컴파일 정보 설정 : 소스 및 컴파일 될 JDK 버전 정보를 설정한다.
- -----------------------------------------------------------------------------------------------------------*/
+
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility  = JavaVersion.VERSION_17
 
 
-/*=====================================================
- *  의존 라이브러리를 읽어오는 설정 파일
- =====================================================*/
+
 apply plugin: "io.github.goooler.shadow"
 apply plugin: 'java'
-apply plugin: 'maven-publish' //maven 저장소에 배포하게 도와주는 플러그인.
 apply plugin: 'io.opentelemetry.instrumentation.muzzle-generation'
 apply plugin: 'io.opentelemetry.instrumentation.muzzle-check'
 apply from: 'dependency.gradle'
 
 
 
-
-
-/*-----------------------------------------------------------------------------------------------------------
-	local maven 저장소에 배포할 정보를 미리 선언 한다.
- -----------------------------------------------------------------------------------------------------------*/
-
-
-
-/*-----------------------------------------------------------------------------------------------------------
-	jar 파일을 build 후 생성 한다.
- -----------------------------------------------------------------------------------------------------------*/
 
 test {
     exclude '**/*'
@@ -68,13 +43,6 @@ tasks.register("extractJar", Copy) {
 }
 
 tasks.named('shadowJar') {
-
-//	implementation 'com.hazelcast:hazelcast:4.2'
-//	implementation 'org.mongodb:mongodb-driver-sync:5.1.2'
-//	implementation 'io.lettuce:lettuce-core:6.0.2.RELEASE'
-//	implementation 'org.mongodb:bson:5.1.2'
-
-//    archiveFileName = "${project.name}-${version}.jar"
 
     dependencies {
 
@@ -95,15 +63,6 @@ tasks.named('shadowJar') {
         exclude(dependency('org.ow2.asm:asm-commons:9.7'))
 
     }
-//
-//    include('META-INF/services/**')
-//    include('io/opentelemetry/javaagent/**')
-
-
-//    relocate(
-//            'io.opentelemetry.instrumentation.hamonica2',
-//            'io.opentelemetry.javaagent.instrumentation.hamonica2.'
-//    )
 
     relocate(
             'io.lettuce.',
@@ -150,7 +109,6 @@ tasks.named('shadowJar') {
     )
 
 
-    // 아파치 커먼즈 프로젝트들은 해당 패키지명으로 변경
     relocate(
             'org.apache.commons.',
             'kr.co.pionnet.hamonica2.agent.org.apache.commons.'
@@ -158,12 +116,6 @@ tasks.named('shadowJar') {
 
 }
 
-
-
-/*-----------------------------------------------------------------------------------------------------------
-	Agent 소스를 Jar파일로 묶어서 배포 한다.
-	 - 머
- -----------------------------------------------------------------------------------------------------------*/
 
 
 tasks.register('buildExtension', Jar) {
@@ -179,22 +131,10 @@ tasks.register('buildExtension', Jar) {
     finalizedBy(tasks.named('copyJar'))
 }
 
-//buildExtension dependsOn 실행 순서를 보장한다.
 tasks.named('build') {
     mustRunAfter 'clean'
 }
 
-//tasks.named('shadowJar') {
-//    mustRunAfter 'build'
-//}
-
-//tasks.named('buildExtension') {
-//    mustRunAfter 'build'
-//}
-
-//tasks.named('extractJar') {
-//    mustRunAfter(tasks.named('shadowJar'))
-//}
 
 
 tasks.register('copyJar', Copy) {
@@ -205,30 +145,3 @@ tasks.register('copyJar', Copy) {
     into "../common/dist"
 }
 
-
-
-/*-----------------------------------------------------------------------------------------------------------
-	로컬 저장소 배포 설정.
-	url 정보를 nexus url로 변경 가능 하다.
-	see : https://docs.gradle.org/current/userguide/publishing_maven.html
- -----------------------------------------------------------------------------------------------------------*/
-
-publishing {
-
-    publications {
-        register('mavenJava', MavenPublication) {
-            from components.java
-        }
-    }
-    repositories {
-        maven {
-            credentials {
-                username = ""
-                password = ""
-            }
-            allowInsecureProtocol true
-            // change to point to your repo, e.g. http://my.org/repo
-            url = "$nexusUrl"
-        }
-    }
-}

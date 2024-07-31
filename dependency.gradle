@@ -4,16 +4,6 @@ compileJava {
     options.annotationProcessorPath = configurations.annotationProcessor
 }
 
-/*-----------------------------------------------------------------------------------------------------------
-	저장소 정의		: 필요한 라이브러리를 다운로드 할 저장소를 설정 한다.
- -----------------------------------------------------------------------------------------------------------*/
-//repositories {
-//	mavenCentral()
-//}
-
-/*-----------------------------------------------------------------------------------------------------------
-	의존성 정의		: 프로그램 구동에 필요한 라이브러리를 지정 한다.
- -----------------------------------------------------------------------------------------------------------*/
 dependencies {
 
     compileOnly 'io.opentelemetry.instrumentation:opentelemetry-instrumentation-api:2.6.0'
@@ -36,7 +26,6 @@ dependencies {
     compileOnly 'org.mybatis:mybatis:3.5.9'
 
 
-    //beanutils, 표현식 처리 라이브러리
     implementation 'commons-beanutils:commons-beanutils:1.9.4'
     implementation 'org.apache.commons:commons-jexl3:3.1'
 
