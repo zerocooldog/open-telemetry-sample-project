@@ -1,0 +1,234 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.2'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id "io.opentelemetry.instrumentation.muzzle-generation" version "2.6.0-alpha"
+    id "io.opentelemetry.instrumentation.muzzle-check" version "2.6.0-alpha"
+}
+
+ext {
+    nexusUrl = 'http://xxxxxxxx:xxxxx/repository/techsupport-snapshot'
+    profile= project.hasProperty("profile") ? project.property("profile").toString() : "local"
+}
+
+repositories {
+    mavenCentral()
+//    maven {
+//        allowInsecureProtocol true
+//        credentials {
+//            username ""
+//            password ""
+//        }
+//        url  'http://xxxx:xxxx/repository/techsupport-public'
+//        artifactUrls  'http://xx.xx.xx.xx:8081/repository/techsupport-snapshot'
+//    }
+}
+/*-----------------------------------------------------------------------------------------------------------
+	컴파일 정보 설정 : 소스 및 컴파일 될 JDK 버전 정보를 설정한다.
+ -----------------------------------------------------------------------------------------------------------*/
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility  = JavaVersion.VERSION_17
+
+
+/*=====================================================
+ *  의존 라이브러리를 읽어오는 설정 파일
+ =====================================================*/
+apply plugin: "io.github.goooler.shadow"
+apply plugin: 'java'
+apply plugin: 'maven-publish' //maven 저장소에 배포하게 도와주는 플러그인.
+apply plugin: 'io.opentelemetry.instrumentation.muzzle-generation'
+apply plugin: 'io.opentelemetry.instrumentation.muzzle-check'
+apply from: 'dependency.gradle'
+
+
+
+
+
+/*-----------------------------------------------------------------------------------------------------------
+	local maven 저장소에 배포할 정보를 미리 선언 한다.
+ -----------------------------------------------------------------------------------------------------------*/
+
+
+
+/*-----------------------------------------------------------------------------------------------------------
+	jar 파일을 build 후 생성 한다.
+ -----------------------------------------------------------------------------------------------------------*/
+
+test {
+    exclude '**/*'
+}
+
+
+// 압축 해제 디렉토리
+def extractDir = file("build/extracted")
+
+tasks.register("extractJar", Copy) {
+    from zipTree(tasks.shadowJar.archiveFile.get().asFile)
+    into extractDir
+}
+
+tasks.named('shadowJar') {
+
+//	implementation 'com.hazelcast:hazelcast:4.2'
+//	implementation 'org.mongodb:mongodb-driver-sync:5.1.2'
+//	implementation 'io.lettuce:lettuce-core:6.0.2.RELEASE'
+//	implementation 'org.mongodb:bson:5.1.2'
+
+//    archiveFileName = "${project.name}-${version}.jar"
+
+    dependencies {
+
+        exclude(dependency('io.opentelemetry.javaagent:opentelemetry-muzzle:2.6.0-alpha'))
+        exclude(dependency('io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-incubator:2.6.0-alpha'))
+        exclude(dependency('io.opentelemetry.javaagent:opentelemetry-javaagent-extension-api:2.6.0-alpha'))
+        exclude(dependency('io.opentelemetry.instrumentation:opentelemetry-instrumentation-api:2.6.0'))
+        exclude(dependency('io.opentelemetry.javaagent:opentelemetry-javaagent-bootstrap:2.6.0-alpha'))
+        exclude(dependency('io.opentelemetry:opentelemetry-sdk-extension-autoconfigure:1.40.0'))
+        exclude(dependency('io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:1.40.0'))
+        exclude(dependency('io.opentelemetry.semconv:opentelemetry-semconv:1.25.0-alpha'))
+        exclude(dependency('io.opentelemetry:opentelemetry-api-incubator:1.40.0-alpha'))
+        exclude(dependency('io.opentelemetry:opentelemetry-api:1.40.0'))
+        exclude(dependency('io.opentelemetry:opentelemetry-context:1.40.0'))
+        exclude(dependency('net.bytebuddy:byte-buddy-dep:1.14.18'))
+        exclude(dependency('org.ow2.asm:asm:9.7'))
+        exclude(dependency('org.ow2.asm:asm-tree:9.7'))
+        exclude(dependency('org.ow2.asm:asm-commons:9.7'))
+
+    }
+//
+//    include('META-INF/services/**')
+//    include('io/opentelemetry/javaagent/**')
+
+
+//    relocate(
+//            'io.opentelemetry.instrumentation.hamonica2',
+//            'io.opentelemetry.javaagent.instrumentation.hamonica2.'
+//    )
+
+    relocate(
+            'io.lettuce.',
+            'kr.co.pionnet.hamonica2.agent.io.lettuce.'
+    )
+
+    relocate(
+            'io.netty.',
+            'kr.co.pionnet.hamonica2.agent.io.netty.'
+    )
+
+    relocate(
+            'io.projectreactor.',
+            'kr.co.pionnet.hamonica2.agent.io.projectreactor.'
+    )
+
+    relocate(
+            'org.reactivestreams.',
+            'kr.co.pionnet.hamonica2.agent.org.reactivestreams.'
+    )
+
+    relocate(
+            'reactor.',
+            'kr.co.pionnet.hamonica2.agent.reactor.'
+    )
+
+    relocate(
+            'javax.',
+            'kr.co.pionnet.hamonica2.agent.javax.'
+    )
+
+
+    relocate('com.hazelcast.',
+            'kr.co.pionnet.hamonica2.agent.hazelcast.'
+    )
+
+    relocate('com.mongodb.'
+            , 'kr.co.pionnet.hamonica2.agent.com.mongodb.'
+    )
+
+    relocate(
+            'org.bson.',
+            'kr.co.pionnet.hamonica2.agent.org.bson.'
+    )
+
+
+    // 아파치 커먼즈 프로젝트들은 해당 패키지명으로 변경
+    relocate(
+            'org.apache.commons.',
+            'kr.co.pionnet.hamonica2.agent.org.apache.commons.'
+    )
+
+}
+
+
+
+/*-----------------------------------------------------------------------------------------------------------
+	Agent 소스를 Jar파일로 묶어서 배포 한다.
+	 - 머
+ -----------------------------------------------------------------------------------------------------------*/
+
+
+tasks.register('buildExtension', Jar) {
+
+    dependsOn 'clean', 'build' //, 'shadowJar', 'extractJar'
+
+    from ('build/classes/java/main') {
+        include("**/**")
+    }
+
+    archiveFileName = "${project.name}-${version}.jar"
+
+    finalizedBy(tasks.named('copyJar'))
+}
+
+//buildExtension dependsOn 실행 순서를 보장한다.
+tasks.named('build') {
+    mustRunAfter 'clean'
+}
+
+//tasks.named('shadowJar') {
+//    mustRunAfter 'build'
+//}
+
+//tasks.named('buildExtension') {
+//    mustRunAfter 'build'
+//}
+
+//tasks.named('extractJar') {
+//    mustRunAfter(tasks.named('shadowJar'))
+//}
+
+
+tasks.register('copyJar', Copy) {
+
+    from(layout.buildDirectory.dir('libs')) {
+        include "${project.name}-${version}.jar"
+    }
+    into "../common/dist"
+}
+
+
+
+/*-----------------------------------------------------------------------------------------------------------
+	로컬 저장소 배포 설정.
+	url 정보를 nexus url로 변경 가능 하다.
+	see : https://docs.gradle.org/current/userguide/publishing_maven.html
+ -----------------------------------------------------------------------------------------------------------*/
+
+publishing {
+
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username = ""
+                password = ""
+            }
+            allowInsecureProtocol true
+            // change to point to your repo, e.g. http://my.org/repo
+            url = "$nexusUrl"
+        }
+    }
+}
